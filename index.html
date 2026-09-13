@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>MK Star 61</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #ffffff; }
+    input[type="range"] { accent-color: #20c3d0; }
+  </style>
+</head>
+<body class="h-screen flex items-center justify-center">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      const [mode, setMode] = useState(1);
+      const [speedUI, setSpeedUI] = useState(3);       // 0-4, right = faster (what the user sees)
+      const [brightness, setBrightness] = useState(4);
+
+      useEffect(() => {
+        fetch('/api/state').then(r => r.json()).then(s => {
+          setMode(s.mode);
+          setSpeedUI(4 - s.speed);   // convert device value -> UI value on load
+          setBrightness(s.brightness);
+        });
+      }, []);
+
+      const send = (patch) => {
+        fetch('/api/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patch),
+        });
+      };
+
+      const pickMode = (m) => {
+        setMode(m);
+        send({ mode: m });
+      };
+
+      const changeSpeed = (uiValue) => {
+        setSpeedUI(uiValue);
+        send({ speed: 4 - uiValue });   // convert UI value -> device value before sending
+      };
+
+      return (
+        <div className="w-[420px] bg-white rounded-3xl p-8 shadow-xl border border-[#b9e8ea]">
+          <h1 className="text-[#0f4d52] text-2xl font-semibold mb-6">MK Star 61</h1>
+
+          <p className="text-[#0f4d52] text-sm font-medium mb-2">Mode</p>
+          <div className="grid grid-cols-4 gap-2 mb-6">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+              <button
+                key={m}
+                onClick={() => pickMode(m)}
+                className={
+                  "py-2 rounded-lg text-sm font-medium transition border " +
+                  (mode === m
+                    ? "bg-[#20c3d0] text-white border-[#20c3d0]"
+                    : "bg-white text-[#0f4d52] border-[#b9e8ea] hover:bg-[#e8f9fa]")
+                }
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          <p className="text-[#0f4d52] text-sm font-medium mb-1">Speed</p>
+          <input
+            type="range" min="0" max="4" value={speedUI}
+            onChange={(e) => changeSpeed(+e.target.value)}
+            className="w-full mb-6"
+          />
+
+          <p className="text-[#0f4d52] text-sm font-medium mb-1">Brightness</p>
+          <input
+            type="range" min="0" max="4" value={brightness}
+            onChange={(e) => { const v = +e.target.value; setBrightness(v); send({ brightness: v }); }}
+            className="w-full"
+          />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
