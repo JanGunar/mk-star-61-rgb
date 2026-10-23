@@ -1,36 +1,30 @@
-from flask import Flask, request, jsonify, send_from_directory
-import hid
+import argparse
+import subprocess
 
-app = Flask(__name__, static_folder='.')
-DEVICE_PATH = b'/dev/hidraw1'
+from app import app
+from udev_setup import setup_udev
 
-@app.route('/')
-def index():
-    return send_from_directory('.', 'index.html')
 
-@app.route('/api/state')
-def get_state():
-    with hid.Device(path=DEVICE_PATH) as d:
-        current = d.get_feature_report(10, 42)
-    return jsonify({
-        'mode': current[1],
-        'speed': current[3],
-        'brightness': current[4],
-    })
+def main():
+    parser = argparse.ArgumentParser(description='MK Star 61 controller')
+    parser.add_argument('--setup', action='store_true', help='install udev permissions')
+    parser.add_argument('--host', default='127.0.0.1')
+    parser.add_argument('--port', default=8000, type=int)
+    parser.add_argument('--mock', action='store_true', help='run without a physical HID device')
+    args = parser.parse_args()
 
-@app.route('/api/set', methods=['POST'])
-def set_state():
-    data = request.json
-    with hid.Device(path=DEVICE_PATH) as d:
-        current = bytearray(d.get_feature_report(10, 42))
-        if 'mode' in data:
-            current[1] = data['mode']
-        if 'speed' in data:
-            current[3] = data['speed']
-        if 'brightness' in data:
-            current[4] = data['brightness']
-        d.send_feature_report(bytes(current))
-    return jsonify({'ok': True})
+    if args.mock:
+        import os
+        os.environ['STAR61_MOCK_HID'] = '1'
+
+    if args.setup:
+        try:
+            setup_udev()
+        except (OSError, subprocess.CalledProcessError, PermissionError) as error:
+            parser.error(f'Setup failed: {error}')
+    else:
+        app.run(host=args.host, port=args.port)
+
 
 if __name__ == '__main__':
-    app.run(port=8000)
+    main()

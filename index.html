@@ -1,34 +1,233 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MK Star 61</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { background: #ffffff; }
-    input[type="range"] { accent-color: #20c3d0; }
+    :root {
+      color-scheme: dark;
+      --background: #111214;
+      --surface: #191a1d;
+      --surface-hover: #222428;
+      --line: #303238;
+      --text: #f1f1ef;
+      --muted: #8f9299;
+      --accent: #8ed8e8;
+      --danger: #ff817c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      background: var(--background);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    button { cursor: pointer; }
+
+    .app {
+      width: min(100% - 40px, 760px);
+      margin: 0 auto;
+      padding: 48px 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -.04em;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      padding-top: 36px;
+    }
+
+    .section-label {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .mode-button {
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--muted);
+      transition: border-color .15s, background .15s, color .15s;
+    }
+
+    .mode-button:hover {
+      border-color: var(--muted);
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .mode-button.active {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #111214;
+      font-weight: 700;
+    }
+
+    .control {
+      margin-bottom: 32px;
+    }
+
+    .control:last-child { margin-bottom: 0; }
+
+    .control-heading {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .control-value {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 4px;
+      appearance: none;
+      border-radius: 0;
+      background: var(--line);
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 14px;
+      height: 14px;
+      appearance: none;
+      border: 0;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .diagnostics {
+      grid-column: 1 / -1;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+
+    .diagnostics-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .diagnostics-header .section-label { margin: 0; }
+
+    .test-button {
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .test-button:hover {
+      border-color: var(--muted);
+      background: var(--surface-hover);
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .detail-label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .detail-value {
+      color: var(--text);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 12px;
+    }
+
+    @media (max-width: 620px) {
+      .app { width: min(100% - 28px, 480px); padding: 28px 0; }
+      .content { grid-template-columns: 1fr; gap: 36px; }
+      .diagnostics { grid-column: auto; }
+      .details { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
-<body class="h-screen flex items-center justify-center">
+<body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useEffect, useState } = React;
 
     function App() {
       const [mode, setMode] = useState(1);
-      const [speedUI, setSpeedUI] = useState(3);       // 0-4, right = faster (what the user sees)
+      const [speedUI, setSpeedUI] = useState(3);
       const [brightness, setBrightness] = useState(4);
+      const [diagnostics, setDiagnostics] = useState(null);
+      const [diagnosticError, setDiagnosticError] = useState('');
 
       useEffect(() => {
-        fetch('/api/state').then(r => r.json()).then(s => {
-          setMode(s.mode);
-          setSpeedUI(4 - s.speed);   // convert device value -> UI value on load
-          setBrightness(s.brightness);
-        });
+        fetch('/api/state')
+          .then((response) => response.json())
+          .then((state) => {
+            setMode(state.mode);
+            setSpeedUI(4 - state.speed);
+            setBrightness(state.brightness);
+          })
+          .catch(() => setDiagnosticError('Unable to load device state'));
       }, []);
 
       const send = (patch) => {
@@ -36,55 +235,103 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(patch),
-        });
+        }).catch(() => setDiagnosticError('Unable to update device'));
       };
 
-      const pickMode = (m) => {
-        setMode(m);
-        send({ mode: m });
-      };
-
-      const changeSpeed = (uiValue) => {
-        setSpeedUI(uiValue);
-        send({ speed: 4 - uiValue });   // convert UI value -> device value before sending
+      const loadDiagnostics = () => {
+        setDiagnosticError('');
+        fetch('/api/diagnostics')
+          .then(async (response) => {
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Diagnostics failed');
+            return data;
+          })
+          .then(setDiagnostics)
+          .catch((error) => {
+            setDiagnostics(null);
+            setDiagnosticError(error.message);
+          });
       };
 
       return (
-        <div className="w-[420px] bg-white rounded-3xl p-8 shadow-xl border border-[#b9e8ea]">
-          <h1 className="text-[#0f4d52] text-2xl font-semibold mb-6">MK Star 61</h1>
+        <main className="app">
+          <header className="topbar">
+            <div>
+              <h1>MK Star 61</h1>
+            </div>
+          </header>
 
-          <p className="text-[#0f4d52] text-sm font-medium mb-2">Mode</p>
-          <div className="grid grid-cols-4 gap-2 mb-6">
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <button
-                key={m}
-                onClick={() => pickMode(m)}
-                className={
-                  "py-2 rounded-lg text-sm font-medium transition border " +
-                  (mode === m
-                    ? "bg-[#20c3d0] text-white border-[#20c3d0]"
-                    : "bg-white text-[#0f4d52] border-[#b9e8ea] hover:bg-[#e8f9fa]")
-                }
-              >
-                {m}
-              </button>
-            ))}
+          <div className="content">
+            <section>
+              <p className="section-label">Lighting mode</p>
+              <div className="mode-grid">
+                {Array.from({ length: 12 }, (_, index) => index + 1).map((value) => (
+                  <button
+                    key={value}
+                    className={`mode-button ${mode === value ? 'active' : ''}`}
+                    onClick={() => { setMode(value); send({ mode: value }); }}
+                  >
+                    {String(value).padStart(2, '0')}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <p className="section-label">Output</p>
+              <div className="control">
+                <div className="control-heading">
+                  <span>Speed</span>
+                  <span className="control-value">{speedUI} / 4</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="4"
+                  value={speedUI}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setSpeedUI(value);
+                    send({ speed: 4 - value });
+                  }}
+                />
+              </div>
+              <div className="control">
+                <div className="control-heading">
+                  <span>Brightness</span>
+                  <span className="control-value">{brightness} / 4</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="4"
+                  value={brightness}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setBrightness(value);
+                    send({ brightness: value });
+                  }}
+                />
+              </div>
+            </section>
+
+            <section className="diagnostics">
+              <div className="diagnostics-header">
+                <p className="section-label">Device information</p>
+                <button className="test-button" onClick={loadDiagnostics}>Test connection</button>
+              </div>
+              {diagnostics && (
+                <div className="details">
+                  <div><span className="detail-label">Device</span><span className="detail-value">{diagnostics.product}</span></div>
+                  <div><span className="detail-label">VID / PID</span><span className="detail-value">{diagnostics.vendor_id} / {diagnostics.product_id}</span></div>
+                  <div><span className="detail-label">Interface</span><span className="detail-value">{diagnostics.interface}</span></div>
+                  <div><span className="detail-label">Response</span><span className="detail-value">{diagnostics.response_time_ms} ms</span></div>
+                </div>
+              )}
+              {diagnosticError && <p className="error">{diagnosticError}</p>}
+            </section>
           </div>
-
-          <p className="text-[#0f4d52] text-sm font-medium mb-1">Speed</p>
-          <input
-            type="range" min="0" max="4" value={speedUI}
-            onChange={(e) => changeSpeed(+e.target.value)}
-            className="w-full mb-6"
-          />
-
-          <p className="text-[#0f4d52] text-sm font-medium mb-1">Brightness</p>
-          <input
-            type="range" min="0" max="4" value={brightness}
-            onChange={(e) => { const v = +e.target.value; setBrightness(v); send({ brightness: v }); }}
-            className="w-full"
-          />
-        </div>
+        </main>
       );
     }
 
