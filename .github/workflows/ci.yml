@@ -21,6 +21,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
+      - name: Install HIDAPI
+        run: sudo apt-get update && sudo apt-get install -y libhidapi-hidraw0
+
       - name: Install project
         run: python -m pip install ".[test]"
 
